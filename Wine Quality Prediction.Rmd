@@ -1,0 +1,405 @@
+---
+title: "Project"
+output: pdf_document
+Group: Varantorn Weruwanarak (DU ID: 873300483)
+       Siddhesh Padwal (DU ID: 873305527) 
+---
+
+
+##1.Lbraries Required:
+
+```{r}
+# Install  R packages designed for data science
+library(tidyverse)
+
+# for dynamic report generation in R[PDF]
+library(knitr)
+
+#  to work with "grid" graphics
+library(gridExtra)
+
+# split the data into two groups 
+library(caret)
+
+#Recursive partitioning for regression
+library(rpart)
+library(rpart.plot) #To plot rpart model
+
+# To implement Random Forest Algorithm
+library(randomForest)
+
+#Reading the Dataset
+dat <- read.csv("wineQualityReds.csv")
+
+```
+
+##2.Exploratory Data Analysis 
+
+```{r}
+##Creating 'Rating'
+dat2 <- read.csv("wineQualityReds.csv")
+dat2$quality <- factor(dat2$quality, ordered = T)
+dat2$rating <- ifelse(dat2$quality < 5, 'Bad', ifelse(
+  dat2$quality < 7, 'Average', 'Good'))
+dat2$rating <- ordered(dat2$rating,
+                       levels = c('Bad', 'Average', 'Good'))
+
+
+#Plot GRAPH
+ggplot(data = dat2, aes(x = quality)) +geom_bar(width = 1, color = 'black',fill = I('gray'))+ggtitle("Overall red wine quality")
+ggplot(data = dat2, aes(x = rating)) +geom_bar(width = 1, color = 'black',fill = I('gray'))
+cat("From graph we can see that quality has most values 
+    concentrated in the categories 5, 6 and 7.  \n")
+
+#Fixed Acidity
+grid.arrange(ggplot(dat, aes( x = 1, y = fixed.acidity ) ) + 
+               geom_jitter(alpha = 0.1 ) +
+               geom_boxplot(alpha = 0.2, color = 'red' ) +
+               scale_y_continuous(lim = c(4,14)),
+ggplot(data = dat, aes(x = fixed.acidity)) +
+  geom_histogram(binwidth = 1, color = 'black',fill = I('gray')) + 
+  scale_x_continuous(lim = c(4,14)),ncol = 2)
+cat("From graph it's distribution look like skew to the left
+    and has mean around 8.")
+
+#Volatile Acidity
+grid.arrange(ggplot(dat, aes( x = 1, y = volatile.acidity ) ) + 
+               geom_jitter(alpha = 0.1 ) +
+               geom_boxplot(alpha = 0.2, color = 'red' ) +
+               scale_y_continuous(lim = c(0,1)),
+ggplot(data = dat, aes(x = volatile.acidity)) +
+  geom_histogram(binwidth = 0.05, color = 'black',fill = I('gray')) +
+  scale_x_continuous(lim = c(0,1)), ncol = 2)
+cat("It is difficult to comment about this distribution
+    and has peak around 0.6")
+
+
+#Citric Acid
+grid.arrange(ggplot(dat, aes( x = 1, y = citric.acid )) + 
+               geom_jitter(alpha = 0.1 ) +
+               geom_boxplot(alpha = 0.2, color = 'red' ),
+ggplot(data = dat, aes(x = citric.acid)) +
+  geom_histogram(binwidth = 0.08, color = 'black',fill = I('gray')) +
+  scale_x_continuous(breaks = seq(0,1,0.1), lim = c(0,1)), ncol = 2)
+cat("It is difficult to comment about this distribution")
+
+#Residual Sugar
+grid.arrange(ggplot(dat, aes( x = 1, y = residual.sugar )) + 
+               geom_jitter(alpha = 0.1 ) +
+               geom_boxplot(alpha = 0.2, color = 'red' ) +
+               scale_y_continuous(lim = c(1,8)),
+ggplot(data = dat, aes(x = residual.sugar)) +
+  geom_histogram(binwidth = 0.1, color = 'black',fill = I('gray')) +
+  scale_x_continuous(lim = c(1,8)), ncol = 2)
+cat("The distribution of sugar has skew on the left")
+
+#Chlorides
+grid.arrange(ggplot(dat, aes( x = 1, y = chlorides )) + 
+               geom_jitter(alpha = 0.1 ) +
+               geom_boxplot(alpha = 0.2, color = 'red' ) +
+               scale_y_continuous(lim = c(0,0.25)),
+ggplot(data = dat, aes(x = chlorides)) +
+  geom_histogram(binwidth = 0.01, color = 'black',fill = I('gray')) +
+  scale_x_continuous(lim = c(0,0.25)), ncol = 2)
+cat("Distribution has peak value around 0.7")
+
+#Free Sulfur Dioxide
+grid.arrange(ggplot(dat, aes( x = 1, y = free.sulfur.dioxide )) + 
+               geom_jitter(alpha = 0.1 ) +
+               geom_boxplot(alpha = 0.2, color = 'red' ) +
+               scale_y_continuous(lim = c(0,45)),
+ggplot(data = dat, aes(x = free.sulfur.dioxide)) +
+  geom_histogram(binwidth = 1, color = 'black',fill = I('gray')) +
+  scale_x_continuous(breaks = seq(0,80,5), lim = c(0,45)), ncol = 2)
+cat("Distribution has peak value around 7")
+
+#Total Sulfur Dioxide
+grid.arrange(ggplot(dat, aes( x = 1, y = total.sulfur.dioxide )) + 
+               geom_jitter(alpha = 0.1 ) +
+               geom_boxplot(alpha = 0.2, color = 'red' ) +
+               scale_y_continuous(lim = c(0,180)),
+ggplot(data = dat, aes(x = total.sulfur.dioxide)) +
+  geom_histogram(binwidth = 5, color = 'black',fill = I('gray')) +
+  scale_x_continuous(lim = c(0,180)), ncol = 2)
+cat("The distribution has skew on the left")
+
+#Density
+grid.arrange(ggplot(dat, aes( x = 1, y = density)) + 
+               geom_jitter(alpha = 0.1 ) +
+               geom_boxplot(alpha = 0.2, color = 'red' ),
+ggplot(data = dat, aes(x = density)) +
+  geom_histogram(binwidth = 0.001, color = 'black',fill = I('gray')), ncol = 2)
+cat("Graph looks normal distributed")
+
+#pH
+grid.arrange(ggplot(dat, aes( x = 1, y = pH)) + 
+               geom_jitter(alpha = 0.1 ) +
+               geom_boxplot(alpha = 0.2, color = 'red' ),
+ggplot(data = dat, aes(x = pH)) +
+  geom_histogram(binwidth = 0.1, color = 'black',fill = I('gray')), ncol = 2)
+cat("Graph looks normal distributed")
+
+#Sulphates
+grid.arrange(ggplot(dat, aes( x = 1, y = sulphates)) + 
+               geom_jitter(alpha = 0.1 ) +
+               geom_boxplot(alpha = 0.2, color = 'red' ) +
+               scale_y_continuous(lim = c(0.3,1.6)),
+ggplot(data = dat, aes(x = sulphates)) +
+  geom_histogram(binwidth = 0.1, color = 'black',fill = I('gray')) +
+  scale_x_continuous(lim = c(0.3,1.6)), ncol = 2)
+cat(" The distribution has skew on the left")
+
+#Alcohol
+grid.arrange(ggplot(dat, aes( x = 1, y = alcohol)) + 
+               geom_jitter(alpha = 0.1 ) +
+               geom_boxplot(alpha = 0.2, color = 'red' ) +
+               scale_y_continuous(lim = c(8,14)),
+ggplot(data = dat, aes(x = alcohol)) +
+  geom_histogram(binwidth = 0.1, color = 'black',fill = I('gray')) +
+  scale_x_continuous(lim = c(8,14)), ncol = 2)
+cat("Distribution has skew on the left")
+
+cat("Summary, after we look into all of the graph for
+    each feature we couldn't decide which one has effective
+    quality of wine. However, some features like Density and 
+    pH has normal distribution. So, we need to find
+    correlation for each feature with quality as below.")
+
+
+```
+#3. Find Important Chemical(feature)
+##3.a)Correlation
+
+```{r}
+#Find correlation
+cor(dat$fixed.acidity,as.numeric(dat$quality))
+cor(dat$volatile.acidity,as.numeric(dat$quality))
+cor(dat$citric.acid,as.numeric(dat$quality))
+cor(dat$residual.sugar,as.numeric(dat$quality))
+cor(dat$chlorides,as.numeric(dat$quality))
+cor(dat$free.sulfur.dioxide,as.numeric(dat$quality))
+cor(dat$total.sulfur.dioxide,as.numeric(dat$quality))
+cor(dat$density,as.numeric(dat$quality))
+cor(dat$pH,as.numeric(dat$quality))
+cor(dat$sulphates,as.numeric(dat$quality))
+cor(dat$alcohol,as.numeric(dat$quality))
+
+cat("After we applied correlation we can see strong
+    correlation about 4 feature that have significant
+    relation with quality of wine.")
+
+cat("First, we obtained correlation value between
+    volatile.acidity and quality equal",cor(dat$volatile.acidity,as.numeric(dat$quality)),
+    "which has strong negative correlation value 
+    and we can plot boxplot as below.")
+
+ggplot(data=dat, aes(x = quality, y = volatile.acidity)) +
+  geom_jitter( alpha = .3) +
+  geom_boxplot(alpha = .5,color = 'blue') +
+  stat_summary(fun.y = "mean", 
+               geom = "point", 
+               color = "red", 
+               shape = 8, 
+               size = 4)
+cat("From boxplot we can see that if we increase 
+    volatile acidity, quality will degrade")
+
+cat("Second, we obtained another strong correlation 
+    value between citric.acid and quality equal",cor(dat$citric.acid,as.numeric(dat$quality)))
+
+ggplot(data=dat, aes(x=quality, y=citric.acid)) +
+  geom_jitter( alpha = .3) +
+  geom_boxplot(alpha = .5,color = 'blue') +
+  stat_summary(fun.y = "mean", 
+               geom = "point", 
+               color = "red", 
+               shape = 8, 
+               size = 4)
+cat("From boxplot we can see that if we increase 
+    volatile acidity, quality will increase too")
+
+cat("Third, we obtained another strong correlation 
+    value between sulphates and quality equal",cor(dat$sulphates,as.numeric(dat$quality)))
+
+ggplot(data=dat, aes(x=quality, y=sulphates)) +
+  geom_jitter( alpha = .3) +
+  geom_boxplot(alpha = .5,color = 'blue') +
+  scale_y_continuous(lim = c(0.25,1)) +
+  stat_summary(fun.y = "mean", 
+               geom = "point", 
+               color = "red", 
+               shape = 8, 
+               size = 4)
+
+cat("From boxplot we can see that wine will have
+    better quality with strong sulphates")
+
+cat("Fourth, we obtained another strong correlation
+    value between alcohol and quality equal",cor(dat$alcohol,as.numeric(dat$quality)))
+
+ggplot(data=dat, aes(x=quality, y=alcohol)) +
+  geom_jitter( alpha = .3) +
+  geom_boxplot(alpha = .5,color = 'blue') +
+  stat_summary(fun.y = "mean", 
+               geom = "point", 
+               color = "red", 
+               shape = 8, 
+               size = 4)
+cat("From boxplot we can see that wine will have 
+    better quality if have strong alcohol too")
+
+cat("In summary, we can conclude that 1.Alcohol
+    2.Sulphates 3.Critic Acid 4.Volatile Acid are
+    effective to predict wine quality.")
+
+cat("We need to know which feature from above
+    four, that has the most effect on quality of wine
+    respectively. So, we applied linear model as below.")
+```
+
+##3b)Linear Model
+```{r}
+lmMod1<-lm(as.numeric(quality) ~ alcohol+sulphates+volatile.acidity+citric.acid, data=dat)
+lmMod1
+
+cat("From linear model we can see that alcohol and sulphates
+    has positive value, so it has linear relationship
+    with wine quality and effective on quality of wine.")
+
+ggplot(data = dat2,
+       aes(y = sulphates, x = alcohol,
+           color = quality)) +
+  geom_point(alpha = 0.8, size = 1) +
+  geom_smooth(method = "lm", se = FALSE,size=1)  +
+  scale_y_continuous(limits=c(0.3,1.5)) +
+  ylab("Sulphate") +
+  xlab("Alcohol") +
+  scale_color_brewer(type='seq',
+                   guide=guide_legend(title='Quality')) +
+  ggtitle("Alcohol and sulphates over wine quality")
+
+cat("From graph above we can conclude that better 
+    alcohol and sulphates will make a better quality of wine.")
+
+cat("However, we still curious to know which one has 
+    the most effect
+    on quality between alcohol and sulphates. So, we 
+    applied random forest which based on random and bootstrap
+    to estimate which feature has the most effect to 
+    quality of wine as below.")
+
+
+
+```
+
+#3.c)Random Forest
+```{r}
+dat.rdforest <- dat # For random forest without new column rating
+set.seed(12345)
+#Random forest to find best feature for quality of wine
+dat.rdforest$quality <- as.factor(dat.rdforest$quality)
+#Random forest with all feature without train and test
+model<- randomForest(quality~., importance=TRUE, proximity=TRUE,dat.rdforest, ntree=500)
+varImpPlot(model)
+plot(model)
+
+cat("We can see that Alcohol and Sulphates has the most
+    effect on quality of wine according random forest. 
+    Random Forest gave us the best chemicals amongst all.
+    Stronger alcohol will give the better quality of wine.")
+cat("Since we don't know whether our data is linear or not
+    it is better to test which model is performing best, So 
+    that we will get to know about the distribution of our data. ")
+```
+
+#4.Model Selection
+```{r}
+#Create train and test
+dat.rdforest <- dat # For random forest without new column rating
+dat.rdforest$quality <- as.factor(dat.rdforest$quality)
+set.seed(12345)
+index <- createDataPartition(dat.rdforest$quality,
+                             p=0.8, list=FALSE) 
+train <- dat.rdforest[index,]
+ test <- dat.rdforest[-index,]
+ #Find model which is better between Linear model and Random forest
+```
+#Linear model
+```{r}
+lmMod2 <- lm(as.numeric(quality) ~ ., data=train)# build the model
+qualityPred <- round(predict(lmMod2, test))  # predict quality
+actuals_preds <- data.frame(actuals=test$quality,
+                            predicteds=qualityPred)
+
+match1<-0
+for(i in 1:nrow(actuals_preds)){
+  if(actuals_preds$actuals[i]==actuals_preds$predicteds[i]){
+    match1=match1+1}
+}
+acc1<- (match1/nrow(actuals_preds))*100
+match1
+acc1
+
+cat("From linear model we can see that we obtained expected 
+    and predict value match equal to",match1,"which gives less accuracy",acc1,"or around 1~2% because our data is non-linear.
+    For more clear understanding we plot the dignostic plot. ")
+
+plot(lmMod2,which=1)
+
+cat("From graph we can see that our data is not linear")
+```
+
+#Random Forest model
+```{r}
+model2<- randomForest(quality~., importance=TRUE, 
+                      proximity=TRUE,train, ntree=700)
+varImpPlot(model2)
+plot(model2)
+prediction2 <- predict(model2, test)  
+
+actuals_preds2 <- data.frame(actuals=test$quality,
+                             predicteds=prediction2)
+match2<-0
+for(i in 1:nrow(actuals_preds2)){
+  if(actuals_preds2$actuals[i]==actuals_preds2$predicteds[i]){
+    match2=match2+1}
+}
+acc2<- (match2/nrow(actuals_preds2))*100
+match2
+acc2
+
+cat("For number of match and accuracy from linear model are",match1,acc1,"respectively. Also from random forest are",match2,acc2,"respectively. We can see that random forest
+    has more accuracy than linear model.")
+
+
+#Increase number of trees and mtry
+model3<- randomForest(quality~., importance=TRUE,
+                      proximity=TRUE,train, mtry =50,ntree=1000)
+varImpPlot(model3)
+plot(model3)
+prediction3 <- predict(model3, test)  
+
+actuals_preds3 <- data.frame(actuals=test$quality,
+                             predicteds=prediction3)
+match3<-0
+for(i in 1:nrow(actuals_preds3)){
+  if(actuals_preds3$actuals[i]==actuals_preds3$predicteds[i]){
+    match3=match3+1}
+}
+acc3<- (match3/nrow(actuals_preds3))*100
+match3
+acc3
+
+cat("We can improve more accuracy but not too much")
+cat("First of all we identified that our data is randomly 
+distributed and hence there is no linear relation between
+quality and any of the features. Hence Random Forest is the 
+best fit for our dataset with high accuracy. Considering 
+this model we concluded that   Alcohol is the most influence
+with wine quality. Sulphates has the less significant than
+Alcohol for effect with wine quality. However, if we increase
+chemicals both of them the wine quality will be much better.
+")
+```
+
+
